@@ -1,0 +1,16 @@
+{
+  "name": "clases-ciencias-5to",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Presentaciones interactivas de Ciencias 5° básico (HTML único autocontenido)",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:20": "node build.mjs clase-20",
+    "test:smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "gsap": "^3.13.0"
+  }
+}
