@@ -48,9 +48,9 @@ add('ruta', 'Ruta de la clase', (el, api) => {
   el.innerHTML = `${head('Ruta de la clase', 5, 'Cinco pasos para que los datos hablen', 'Tocas una estación para destacarla. Al final de la clase habremos recorrido todo el camino.')}
   <div class="road" data-a><svg aria-hidden="true"></svg><div class="stations">${C.ROUTE.map((s, i) => `<button class="station" data-i="${i}"><span class="n">${i + 1}</span><h3>${s[0]}</h3><p>${s[1]}</p></button>`).join('')}</div></div>`;
   gsap.set($$('.station', el), { autoAlpha: 0 });
-  api.later(() => {
+  api.later(() => { try {
     const road = $('.road', el), st = $$('.station', el), r0 = road.getBoundingClientRect(); const svg = $('svg', road);
-    if (!svg.clientWidth || getComputedStyle(svg).display === 'none') return;
+    if (!svg.clientWidth || getComputedStyle(svg).display === 'none') { enter(st, { stagger: 0.12 }); return; } // celular: sin camino dibujado, solo tarjetas
     const pts = st.map((s) => { const r = $('.n', s).getBoundingClientRect(); return [r.left + r.width / 2 - r0.left, r.top + r.height / 2 - r0.top]; });
     svg.setAttribute('viewBox', `0 0 ${r0.width} ${r0.height}`);
     const seg = pts.slice(1).map((p, i) => { const a = pts[i], dx = (p[0] - a[0]) / 2; return `M${a[0]} ${a[1]}C${a[0] + dx} ${a[1]} ${p[0] - dx} ${p[1]} ${p[0]} ${p[1]}`; });
@@ -60,7 +60,7 @@ add('ruta', 'Ruta de la clase', (el, api) => {
     tl.to(st[0], { autoAlpha: 1, y: 0, duration: D(0.5), ease: 'back.out(1.6)' });
     ways.forEach((w, i) => { tl.fromTo(w, { drawSVG: '0%' }, { drawSVG: '100%', duration: D(0.55), ease: 'power1.inOut' }).to(st[i + 1], { autoAlpha: 1, y: 0, duration: D(0.5), ease: 'back.out(1.6)' }, '-=0.1'); });
     api.cleanup(() => tl.kill());
-  }, 60);
+  } catch (e) { gsap.set($$('.station', el), { autoAlpha: 1, y: 0 }); } }, 60);
   $$('.station', el).forEach((s) => (s.onclick = () => { $$('.station', el).forEach((x) => x.classList.toggle('on', x === s)); pop(s, 1.05); beep('tap'); }));
 });
 
