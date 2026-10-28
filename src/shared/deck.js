@@ -16,7 +16,7 @@ const ICONS = `<svg width="0" height="0" style="position:absolute" aria-hidden="
 <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
 <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 22V4M4 4h13l-2 4 2 4H4"/></symbol></svg>`;
 
-export function startDeck({ root = $('#app'), stages, scenes, brand, metaText }) {
+export function startDeck({ root = $('#app'), stages, scenes, brand, metaText, tools }) {
   root.innerHTML = `${ICONS}<div class="ambient" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="app"><header class="top"><div class="brand"><div class="bolt">${ic('bolt')}</div><span>${brand}</span></div>
   <nav class="stages" id="stages" aria-label="Etapas de la clase"></nav>
@@ -30,6 +30,7 @@ export function startDeck({ root = $('#app'), stages, scenes, brand, metaText })
   <button class="nav-btn primary" id="next"><span id="nextL">Siguiente</span>${ic('right')}</button></footer></div>
   <canvas id="ink" aria-hidden="true"></canvas><div class="palette" id="pal" hidden></div>`;
 
+  if (tools) ['tTurn', 'tTimer', 'tPen', 'tSnd', 'tFull', 'tMeta'].forEach((id) => { if (!tools.includes(id)) $('#' + id).hidden = true; });
   const main = $('#main');
   let cur = -1, groups = [], shown = 0, cleanups = [];
   const seen = new Set(), seenStage = new Set();

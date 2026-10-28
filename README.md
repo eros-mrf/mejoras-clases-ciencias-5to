@@ -8,6 +8,8 @@ Cada clase es **un único HTML autocontenido** (JS, CSS, fuentes e imagen embebi
 |---|---|
 | 20 · De la tabla al gráfico | [`dist/Clase_20_De_la_tabla_al_grafico.html`](dist/Clase_20_De_la_tabla_al_grafico.html) |
 
+Además hay una **versión para estudiantes** con solo la actividad central (Laboratorio + Interpretar), pensada para que cada niño la use en Chrome en su equipo y la desarrolle en clase: [`dist/Clase_20_Actividad_central_estudiantes.html`](dist/Clase_20_Actividad_central_estudiantes.html). Incluye instrucciones, nombre del estudiante y una pantalla *Mi resumen* (con botón para copiarlo) que muestra al profesor cuánto logró. La presentación completa queda para el docente en la sala.
+
 Misma estructura que la versión original (Meta → Ruta → Inicio → Modelamiento → Laboratorio → Interpretar → Misión → Evaluación → Cierre), ahora en **20 diapositivas** que caben en pantalla, con construcción por partes y actividades de participación.
 
 ## Cómo se usa en clase
@@ -26,7 +28,8 @@ assets/                       # fuentes woff2 (latin) e imagen del profe Eros
 src/shared/theme.css          # tema oscuro compartido
 src/shared/kit.js             # GSAP + helpers (entradas, confeti, sonido, arrastrar, gráfico SVG, clasificador, sondeo)
 src/shared/deck.js            # motor de presentación (escenas, builds, transiciones, gestos, turno, timer, lápiz)
-src/clases/clase-20/          # content.js (contenido pedagógico), index.js (escenas), meta.json
+src/clases/clase-20/          # content.js (contenido pedagógico), scenes.js (escenas), index.js (presentación del docente), meta.json
+src/clases/clase-20-actividad/ # versión estudiantes: reutiliza las escenas lab/int + instrucciones + resumen
 scripts/smoke.mjs             # recorre todas las láminas en Chromium y falla si hay errores de consola
 .claude/skills/               # skills de motion usados (ver abajo)
 ```
