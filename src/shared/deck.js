@@ -48,14 +48,19 @@ export function startDeck({ root = $('#app'), stages, scenes, brand, metaText, t
   const dotEls = $$('button', dots);
 
   /* ---------- escenas ---------- */
+  let sweepT = 0;
+  function dropScene(n) { n._cl?.forEach((f) => f()); n._cl = null; gsap.killTweensOf([n, ...$$('*', n)]); n.remove(); }
   function go(i, force) {
     if (i < 0 || i >= scenes.length || (i === cur && !force)) return;
-    const dir = i >= cur ? 1 : -1, first = cur < 0, old = main.firstElementChild, oldClean = cleanups;
+    const dir = i >= cur ? 1 : -1, first = cur < 0;
+    /* nunca dos láminas a la vez: se retiran las que aún se están yendo y solo la actual sale con animación */
+    const live = $$('.scene', main), old = live[live.length - 1] || null;
+    live.slice(0, -1).forEach(dropScene);
+    if (old) { gsap.killTweensOf(old); old.style.pointerEvents = 'none'; }
     cur = i; cleanups = [];
-    $$('.scene', main).slice(0, -1).forEach((n) => n.remove());
     $('#ink').getContext('2d').clearRect(0, 0, 9999, 9999);
     const el = document.createElement('section'); el.className = 'scene'; el.setAttribute('aria-label', scenes[i].title);
-    main.appendChild(el);
+    el._cl = cleanups; main.appendChild(el);
     const api = { cleanup: (f) => cleanups.push(f), later: (f, ms) => { const t = setTimeout(f, ms); cleanups.push(() => clearTimeout(t)); }, go, next, el };
     scenes[i].build(el, api);
     el.scrollTop = 0;
@@ -70,9 +75,10 @@ export function startDeck({ root = $('#app'), stages, scenes, brand, metaText, t
     seen.add(i); seenStage.add(scenes[i].stage);
     /* transición dirigida (page-transition-animation): sale hacia el lado contrario, entra con solape */
     if (old) {
-      gsap.to(old, { autoAlpha: 0, x: mv(-60 * dir), duration: D(0.3), ease: 'power2.in', onComplete: () => { oldClean.forEach((f) => f()); gsap.killTweensOf($$('*', old)); old.remove(); } });
+      gsap.to(old, { autoAlpha: 0, x: mv(-60 * dir), duration: D(0.3), ease: 'power2.in', onComplete: () => dropScene(old) });
       gsap.fromTo(el, { autoAlpha: 0, x: mv(80 * dir) }, { autoAlpha: 1, x: 0, duration: D(0.45), ease: 'power3.out', delay: 0.12, clearProps: 'transform' });
     }
+    clearTimeout(sweepT); sweepT = setTimeout(() => $$('.scene', main).filter((n) => n !== el).forEach(dropScene), 900); // red de seguridad
     scenes[i].enter?.(el, api);
     ui();
     history.replaceState(null, '', '#' + (i + 1));
