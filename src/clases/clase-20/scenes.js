@@ -1,33 +1,14 @@
 // Clase 20 · De la tabla al gráfico — escenas interactivas (misma estructura que la versión original).
 import { gsap, $, $$, ic, enter, pop, shake, confetti, toast, beep, mv, D, countUp, chart, sortGame, poll, draggable, under } from '../../shared/kit.js';
 import * as C from './content.js';
+import { head, fbox, mcq, ruta, vocabCards, vocabGame, evalQuiz, checklist } from '../../shared/blocks.js';
 import erosImg from '../../../assets/eros.webp';
 
 const META = 'Organizar datos de la auditoría energética en tablas y gráficos simples, interpretar tendencias y formular conclusiones prudentes.';
 const STAGES = [['meta', 'Meta'], ['ruta', 'Ruta'], ['ini', 'Inicio'], ['mod', 'Modelamiento'], ['lab', 'Laboratorio'], ['int', 'Interpretar'], ['mis', 'Misión'], ['eval', 'Evaluación'], ['cierre', 'Cierre']].map(([id, name]) => ({ id, name }));
-const head = (eb, min, h, lead) => `<div class="head" data-a><div class="eyebrow"><span>${eb}</span><button class="time" data-min="${min}" aria-label="Iniciar temporizador de ${min} minutos">${min} min</button></div><h2>${h}</h2>${lead ? `<p class="lead">${lead}</p>` : ''}</div>`;
-const fbox = (cls, t, m) => `<div class="fb ${cls}"><b>${t}</b>${m}</div>`;
-
 /* estado que sobrevive al ir y volver entre diapositivas */
 const S = { pred: {}, camp: {}, view: 'L', times: {}, vcards: new Set(), vgame: {}, ini: { i: 0, a: {} }, part: null, tour: false, place: new Set(),
   s1: {}, s2: {}, s3: {}, lab: { t: null, y: null, s: null, v: {}, msg: '' }, link: { done: new Set() }, rec: { d: null, m: null, b: null, txt: '' }, ev: { i: 0, ans: {}, done: false }, can: new Set(), tk: ['', ''] };
-
-/* ---------- pregunta a pregunta con respuesta inmediata ---------- */
-function mcq(el, list, st, { chartHtml, onDone } = {}) {
-  const draw = () => {
-    const i = st.i, q = list[i], a = st.a[i], done = a !== undefined;
-    el.innerHTML = `<div style="display:grid;gap:.8rem"><div class="row" style="justify-content:space-between"><span class="tag">Pregunta ${i + 1} de ${list.length}</span><span class="pill">Correctas: <b>${Object.keys(st.a).filter((k) => st.a[k] === list[k].a).length}</b></span></div>
-    <div class="prog"><i style="transform:scaleX(${(i + (done ? 1 : 0)) / list.length})"></i></div><p class="qtext">${q.q}</p>
-    <div class="opts">${q.o.map((o, k) => `<button class="opt ${done ? (k === q.a ? 'right' : a === k ? 'wrong' : 'dim') : ''}" data-k="${k}" ${done ? 'disabled' : ''}><span class="k">${'ABC'[k]}</span>${o}</button>`).join('')}</div>
-    <div id="mfb">${done ? fbox(a === q.a ? 'ok' : 'no', a === q.a ? 'Correcto' : 'Revisemos', q.w) : ''}</div>
-    <div class="row">${i > 0 ? `<button class="btn sm" id="mp">${ic('left')} Anterior</button>` : ''}${done && i < list.length - 1 ? `<button class="btn amber" id="mn">Siguiente pregunta ${ic('right')}</button>` : ''}${done && i === list.length - 1 ? `<span class="tag">¡Terminaste!</span>` : ''}</div></div>`;
-    $$('.opt', el).forEach((b) => (b.onclick = () => { const k = +b.dataset.k; st.a[i] = k; beep(k === q.a ? 'ok' : 'no'); draw(); const t = k === q.a ? $('.opt.right', el) : $('.opt.wrong', el); k === q.a ? pop(t, 1.04) : shake(t); gsap.from($('#mfb', el).firstChild, { y: mv(12), autoAlpha: 0, duration: D(0.3) });
-      if (Object.keys(st.a).length === list.length) onDone?.(); }));
-    $('#mn', el)?.addEventListener('click', () => { st.i++; draw(); gsap.from(el.firstChild, { x: mv(40), autoAlpha: 0, duration: D(0.35), ease: 'power3.out' }); });
-    $('#mp', el)?.addEventListener('click', () => { st.i--; draw(); });
-  };
-  draw();
-}
 
 const SCENES = [];
 const add = (stage, title, build, enterFn) => SCENES.push({ stage, title, build, enter: enterFn });
@@ -43,41 +24,9 @@ add('meta', 'Portada y meta', (el) => {
 });
 
 /* ===== RUTA ===== */
-add('ruta', 'Ruta de la clase', (el, api) => {
-  el.innerHTML = `${head('Ruta de la clase', 5, 'Cinco pasos para que los datos hablen', 'Tocas una estación para destacarla. Al final de la clase habremos recorrido todo el camino.')}
-  <div class="road" data-a><svg aria-hidden="true"></svg><div class="stations">${C.ROUTE.map((s, i) => `<button class="station" data-i="${i}"><span class="n">${i + 1}</span><h3>${s[0]}</h3><p>${s[1]}</p></button>`).join('')}</div></div>`;
-  gsap.set($$('.station', el), { autoAlpha: 0 });
-  api.later(() => { try {
-    const road = $('.road', el), st = $$('.station', el), r0 = road.getBoundingClientRect(); const svg = $('svg', road);
-    if (!svg.clientWidth || getComputedStyle(svg).display === 'none') { enter(st, { stagger: 0.12 }); return; } // celular: sin camino dibujado, solo tarjetas
-    const pts = st.map((s) => { const r = $('.n', s).getBoundingClientRect(); return [r.left + r.width / 2 - r0.left, r.top + r.height / 2 - r0.top]; });
-    svg.setAttribute('viewBox', `0 0 ${r0.width} ${r0.height}`);
-    const seg = pts.slice(1).map((p, i) => { const a = pts[i], dx = (p[0] - a[0]) / 2; return `M${a[0]} ${a[1]}C${a[0] + dx} ${a[1]} ${p[0] - dx} ${p[1]} ${p[0]} ${p[1]}`; });
-    svg.innerHTML = seg.map((d) => `<path class="track" d="${d}"/>`).join('') + seg.map((d) => `<path class="way" d="${d}"/>`).join('');
-    const ways = $$('.way', svg), tl = gsap.timeline({ delay: 0.2 });
-    gsap.set(st, { autoAlpha: 0, y: mv(30) });
-    tl.to(st[0], { autoAlpha: 1, y: 0, duration: D(0.5), ease: 'back.out(1.6)' });
-    ways.forEach((w, i) => { tl.fromTo(w, { drawSVG: '0%' }, { drawSVG: '100%', duration: D(0.55), ease: 'power1.inOut' }).to(st[i + 1], { autoAlpha: 1, y: 0, duration: D(0.5), ease: 'back.out(1.6)' }, '-=0.1'); });
-    api.cleanup(() => tl.kill());
-  } catch (e) { gsap.set($$('.station', el), { autoAlpha: 1, y: 0 }); } }, 60);
-  $$('.station', el).forEach((s) => (s.onclick = () => { $$('.station', el).forEach((x) => x.classList.toggle('on', x === s)); pop(s, 1.05); beep('tap'); }));
-});
-
-add('ruta', 'Vocabulario clave', (el) => {
-  const keys = Object.keys(C.VOCAB);
-  el.innerHTML = `${head('Ruta de la clase · Vocabulario', 5, 'Vocabulario clave · da vuelta cada tarjeta', 'Un estudiante voluntario toca una palabra, intenta decir qué significa y luego la damos vuelta para comprobarlo.')}
-  <div class="row" data-a><span class="pill">Palabras descubiertas: <b id="vc">${S.vcards.size}</b> / ${keys.length}</span></div>
-  <div class="vocab" data-a>${keys.map((k, i) => `<button class="vcard" data-k="${k}" aria-label="${k}: tocar para ver el significado"><span class="f a">${k}<small>Toca para girar</small></span><span class="f b"><b>${k}</b>${C.VOCAB[k]}</span></button>`).join('')}</div>`;
-  const flip = (c, to, anim = true) => gsap.to(c, { rotationY: to ? 180 : 0, duration: anim ? D(0.6) : 0, ease: 'power3.inOut' });
-  $$('.vcard', el).forEach((c) => { if (S.vcards.has(c.dataset.k)) flip(c, true, false); c.onclick = () => { const on = S.vcards.has(c.dataset.k); on ? S.vcards.delete(c.dataset.k) : S.vcards.add(c.dataset.k); flip(c, !on); beep('tap'); $('#vc', el).textContent = S.vcards.size; if (S.vcards.size === keys.length) { confetti(); toast('¡Descubrieron todo el vocabulario!'); } }; });
-});
-
-add('ruta', 'Juego: ¿qué palabra es?', (el) => {
-  const keys = Object.keys(C.VOCAB);
-  if (!S.vgame.list) S.vgame = { i: 0, a: {}, list: keys.slice().sort(() => Math.random() - 0.5).slice(0, 5).map((k) => { const o = keys.filter((x) => x !== k).sort(() => Math.random() - 0.5).slice(0, 2).concat(k).sort(() => Math.random() - 0.5); return { q: `Es: «${C.VOCAB[k]}». ¿Qué palabra es?`, o, a: o.indexOf(k), w: `Es “${k}”.` }; }) };
-  el.innerHTML = `${head('Ruta de la clase · Juego rápido', 5, '¿Qué palabra es?', 'Leemos el significado y elegimos la palabra. Usa el botón <strong>Turno</strong> para que cada pregunta la responda un estudiante distinto.')}<div class="panel" data-a id="vg" style="max-width:56rem"></div>`;
-  mcq($('#vg', el), S.vgame.list, S.vgame, { onDone: () => { confetti(); beep('win'); } });
-});
+add('ruta', 'Ruta de la clase', ruta({ eb: 'Ruta de la clase', h2: 'Cinco pasos para que los datos hablen', lead: 'Tocas una estación para destacarla. Al final de la clase habremos recorrido todo el camino.', items: C.ROUTE }));
+add('ruta', 'Vocabulario clave', vocabCards({ eb: 'Ruta de la clase · Vocabulario', VOCAB: C.VOCAB, store: S.vcards }));
+add('ruta', 'Juego: ¿qué palabra es?', vocabGame({ eb: 'Ruta de la clase · Juego rápido', VOCAB: C.VOCAB, store: S.vgame }));
 
 /* ===== INICIO ===== */
 add('ini', 'Predice antes de ver', (el) => {
@@ -282,30 +231,7 @@ add('mis', 'Mi recomendación', (el) => {
 });
 
 /* ===== EVALUACIÓN ===== */
-add('eval', 'Evaluación formativa', (el) => {
-  const E = S.ev, N = C.QS.length;
-  el.innerHTML = `${head('Evaluación formativa', 7, 'Comprobamos lo aprendido', 'Responde las seis preguntas y pulsa <strong>Finalizar</strong>: solo ahí verás cuáles fueron correctas.')}<div class="panel" id="ev" data-a style="max-width:62rem"></div>`;
-  const box = $('#ev', el);
-  const draw = () => {
-    if (E.done) return results();
-    const i = E.i, q = C.QS[i], n = Object.keys(E.ans).length;
-    box.innerHTML = `<div class="row" style="justify-content:space-between"><span class="tag">Pregunta ${i + 1} de ${N}</span><span class="pill">Respondidas: <b>${n}</b> / ${N}</span></div>
-    <div class="row" style="margin:.7rem 0">${C.QS.map((_, k) => `<button class="chip" data-g="${k}" aria-pressed="${k === i}" style="${E.ans[k] !== undefined ? 'border-color:var(--safe)' : ''};min-width:3rem">${k + 1}</button>`).join('')}</div>
-    <p class="qtext" style="margin-bottom:.8rem">${q.q}</p><div class="opts">${q.o.map((o, k) => `<button class="opt ${E.ans[i] === k ? 'sel' : ''}" data-k="${k}"><span class="k">${'ABC'[k]}</span>${o}</button>`).join('')}</div>
-    <div class="row" style="margin-top:1rem">${i > 0 ? `<button class="btn" id="ep">${ic('left')} Anterior</button>` : ''}${i < N - 1 ? `<button class="btn" id="en">Siguiente ${ic('right')}</button>` : ''}<button class="btn amber" id="fin" ${n < N ? 'disabled' : ''}>Finalizar y ver resultados</button><span class="muted">${n < N ? `Te faltan ${N - n} por responder.` : '¡Listo! Puedes finalizar.'}</span></div>`;
-    $$('.opt', box).forEach((b) => (b.onclick = () => { E.ans[i] = +b.dataset.k; beep('tap'); draw(); if (i < N - 1) setTimeout(() => { E.i = i + 1; draw(); gsap.from(box.children, { x: mv(40), autoAlpha: 0, duration: D(0.35), stagger: 0.04 }); }, 450); }));
-    $$('[data-g]', box).forEach((b) => (b.onclick = () => { E.i = +b.dataset.g; draw(); }));
-    $('#ep', box)?.addEventListener('click', () => { E.i--; draw(); }); $('#en', box)?.addEventListener('click', () => { E.i++; draw(); });
-    $('#fin', box).onclick = () => { E.done = true; draw(); };
-  };
-  const results = () => {
-    const ok = C.QS.filter((q, i) => E.ans[i] === q.a).length;
-    box.innerHTML = `<div class="score"><div><span class="tag">Tu resultado</span><div class="big" id="sc">0 / ${N}</div></div><p style="max-width:48ch">${ok === N ? '¡Excelente! Lees gráficos con cuidado y tus conclusiones se apoyan en los datos.' : ok >= 4 ? 'Muy bien. Revisa las explicaciones de las preguntas incorrectas para fortalecer la idea.' : 'Buen comienzo. Recuerda: primero describir lo que se ve, después interpretar con prudencia.'}</p></div>
-    <div class="res-list" style="margin-top:1rem">${C.QS.map((q, i) => { const g = E.ans[i] === q.a; return `<div class="fb ${g ? 'ok' : 'no'}"><b>${g ? '✔' : '✘'} Pregunta ${i + 1}</b>${g ? q.w : `Correcta: <b style="display:inline;color:inherit">${q.o[q.a]}</b>. ${q.w}`}</div>`; }).join('')}</div>`;
-    countUp($('#sc', box), ok, 1, (n) => `${Math.round(n)} / ${N}`); enter($$('.fb', box), { stagger: 0.12, delay: 0.5 }); if (ok >= 5) setTimeout(() => { confetti(); beep('win'); }, 800);
-  };
-  draw();
-});
+add('eval', 'Evaluación formativa', evalQuiz({ QS: C.QS, store: S.ev, msg: (ok, N) => (ok === N ? '¡Excelente! Lees gráficos con cuidado y tus conclusiones se apoyan en los datos.' : ok >= 4 ? 'Muy bien. Revisa las explicaciones de las preguntas incorrectas para fortalecer la idea.' : 'Buen comienzo. Recuerda: primero describir lo que se ve, después interpretar con prudencia.') }));
 
 /* ===== CIERRE ===== */
 add('cierre', 'Puesta en común', (el) => {
@@ -321,8 +247,8 @@ add('cierre', 'Lo que ya puedo hacer', (el) => {
   <div class="grid2"><div class="panel" data-a><h3>Marca lo que ya logras</h3><div class="check" id="can"></div></div>
   <div class="ticket" data-a><h3>Ticket de salida</h3><label>Nuestro gráfico muestra <select id="tk1"><option value="">elige…</option>${C.TK1.map((t) => `<option>${t}</option>`).join('')}</select> por eso una medida posible es <select id="tk2"><option value="">elige…</option>${C.TK2.map((t) => `<option>${t}</option>`).join('')}</select></label>
   <button class="btn amber" id="tkSave">Guardar mi ticket</button><p id="tkfb" style="color:var(--safe)"></p></div></div>`;
-  const d = () => { $('#can', el).innerHTML = C.CAN.map((c, i) => `<button class="chk" data-i="${i}" aria-pressed="${S.can.has(i)}"><span class="box">${S.can.has(i) ? ic('check') : ''}</span>${c}</button>`).join(''); $$('#can .chk', el).forEach((b) => (b.onclick = () => { const i = +b.dataset.i; S.can.has(i) ? S.can.delete(i) : S.can.add(i); d(); const bx = $$('#can .chk .box', el)[i]; pop(bx, 1.3); beep('tap'); if (S.can.size === C.CAN.length) { confetti(); beep('win'); } })); };
-  d(); $('#tk1', el).value = S.tk[0]; $('#tk2', el).value = S.tk[1]; $('#tk1', el).onchange = (e) => (S.tk[0] = e.target.value); $('#tk2', el).onchange = (e) => (S.tk[1] = e.target.value);
+  checklist($('#can', el), C.CAN, S.can);
+  $('#tk1', el).value = S.tk[0]; $('#tk2', el).value = S.tk[1]; $('#tk1', el).onchange = (e) => (S.tk[0] = e.target.value); $('#tk2', el).onchange = (e) => (S.tk[1] = e.target.value);
   $('#tkSave', el).onclick = () => { if (!$('#tk1', el).value || !$('#tk2', el).value) { toast('Completa las dos partes del ticket'); return; } $('#tkfb', el).textContent = 'Ticket guardado. En la clase 21 seguiremos el recorrido de la electricidad desde su origen hasta nuestra sala.'; confetti(); beep('win'); };
 });
 
